@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"novato/pkg/ast"
 	"novato/pkg/lexer"
 	"strconv"
@@ -12,12 +11,23 @@ const (
 	_ int = iota
 	LOWEST
 	EQUALS      // ==
-	LESSGREATER // > o <
-	SUM         // +
-	PRODUCT     // *
+	LESSGREATER // > o <, >=, <=
+	SUM         // + o -
+	PRODUCT     // * o /
 	PREFIX      // -X o !X
 	CALL        // myFunction(X)
 )
+
+var precedences = map[lexer.TokenType]int{
+	lexer.EQ:    EQUALS,
+	lexer.LTE:   LESSGREATER,
+	lexer.GTE:   LESSGREATER,
+	lexer.LT:    LESSGREATER,
+	lexer.RT:    LESSGREATER,
+	lexer.PLUS:  SUM,
+	lexer.MINUS: SUM,
+	"and":       EQUALS, // Precedencia para operador lógico
+}
 
 type (
 	prefixParseFn func() ast.Expression
@@ -42,7 +52,16 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix("VERDADERO", p.parseBoolean)
 	p.registerPrefix("FALSO", p.parseBoolean)
 
-	// Leer dos tokens para establecer curTok y peekTok
+	p.infixParseFns = make(map[lexer.TokenType]infixParseFn)
+	p.registerInfix(lexer.PLUS, p.parseInfixExpression)
+	p.registerInfix(lexer.MINUS, p.parseInfixExpression)
+	p.registerInfix(lexer.EQ, p.parseInfixExpression)
+	p.registerInfix(lexer.LTE, p.parseInfixExpression)
+	p.registerInfix(lexer.GTE, p.parseInfixExpression)
+	p.registerInfix(lexer.LT, p.parseInfixExpression)
+	p.registerInfix(lexer.RT, p.parseInfixExpression)
+	p.registerInfix("and", p.parseInfixExpression)
+
 	p.nextToken()
 	p.nextToken()
 
@@ -51,6 +70,10 @@ func New(l *lexer.Lexer) *Parser {
 
 func (p *Parser) registerPrefix(tokenType lexer.TokenType, fn prefixParseFn) {
 	p.prefixParseFns[tokenType] = fn
+}
+
+func (p *Parser) registerInfix(tokenType lexer.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
 }
 
 func (p *Parser) nextToken() {
@@ -91,7 +114,6 @@ func (p *Parser) parseVariableStatement() ast.Statement {
 
 	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
 
-	// Siguiente token debe ser el tipo (ej: ent, text, bool)
 	if !p.expectPeek("T_ENT") && !p.expectPeek("T_TEXT") && !p.expectPeek("T_BOOL") && !p.expectPeek("T_DECI") {
 		return nil
 	}
@@ -114,7 +136,32 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		return nil
 	}
 	leftExp := prefix()
+
+	for !p.peekTokenIs(lexer.EOF) && precedence < p.peekPrecedence() {
+		infix := p.infixParseFns[p.peekTok.Type]
+		if infix == nil {
+			return leftExp
+		}
+
+		p.nextToken()
+		leftExp = infix(leftExp)
+	}
+
 	return leftExp
+}
+
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	expression := &ast.InfixExpression{
+		Token:    p.curTok,
+		Operator: p.curTok.Literal,
+		Left:     left,
+	}
+
+	precedence := p.curPrecedence()
+	p.nextToken()
+	expression.Right = p.parseExpression(precedence)
+
+	return expression
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
@@ -126,9 +173,6 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 	value, err := strconv.ParseInt(p.curTok.Literal, 0, 64)
 	if err != nil {
-		msg := fmt.Sprintf("no se pudo parsear %q como entero", p.curTok.Literal)
-		// Aquí podríamos registrar errores del parser en el futuro
-		_ = msg
 		return nil
 	}
 
@@ -150,4 +194,18 @@ func (p *Parser) expectPeek(t lexer.TokenType) bool {
 		return true
 	}
 	return false
+}
+
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekTok.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+func (p *Parser) curPrecedence() int {
+	if p, ok := precedences[p.curTok.Type]; ok {
+		return p
+	}
+	return LOWEST
 }

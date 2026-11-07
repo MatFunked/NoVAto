@@ -89,3 +89,17 @@ type Boolean struct {
 func (b *Boolean) expressionNode()      {}
 func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
 func (b *Boolean) String() string       { return b.Token.Literal }
+
+// Expresión infija (ej: edad >= 18, a + b)
+type InfixExpression struct {
+	Token    lexer.Token // El operador (ej: >=, +, and)
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+func (ie *InfixExpression) expressionNode()      {}
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *InfixExpression) String() string {
+	return "(" + ie.Left.String() + " " + ie.Operator + " " + ie.Right.String() + ")"
+}
