@@ -1,3 +1,0 @@
-// Mi primer programa en NoVAto
-imprimir("¡Hola mundo desde NoVAto!")
-variable edad: entero = 18

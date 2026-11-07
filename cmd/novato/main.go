@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"novato/pkg/lexer"
 	"os"
 )
 
@@ -26,11 +27,15 @@ func main() {
 
 	fmt.Printf("--- Compilando / Interpretando: %s ---\n", archivoPath)
 
-	// Aquí llamaremos próximamente a nuestro Lexer y Parser
+	// 3. Procesar el código con nuestro Lexer
 	procesarCodigo(codigoFuente)
 }
 
 func procesarCodigo(codigo string) {
-	// De momento, solo confirmamos que el texto llegó al motor
-	fmt.Println("Código cargado con éxito en memoria. Longitud:", len(codigo), "caracteres.")
+	s := lexer.New(codigo)
+
+	// Recorrer y mostrar cada token generado por el lexer
+	for tok := s.NextToken(); tok.Type != lexer.EOF; tok = s.NextToken() {
+		fmt.Printf("Token -> Tipo: %-12s | Literal: %s\n", tok.Type, tok.Literal)
+	}
 }
