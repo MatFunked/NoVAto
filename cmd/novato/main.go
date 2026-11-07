@@ -39,6 +39,8 @@ func procesarCodigo(codigo string) {
 
 	fmt.Printf("--- Árbol de Sintaxis Abstracta (AST) ---\n")
 	for _, stmt := range programa.Statements {
-		fmt.Printf("Sentencia detectada: %s\n", stmt.String())
+		if stmt.String() != "" {
+			fmt.Printf("Sentencia detectada: %s\n", stmt.String())
+		}
 	}
 }

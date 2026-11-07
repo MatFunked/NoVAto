@@ -1,0 +1,8 @@
+constante ADMIN_AUTORIZADO bool = Verdadero
+variable intentos_maximos ent = 3
+
+si intentos_maximos >= 3 {
+    variable acceso_permitido bool = Verdadero
+} sino {
+    variable acceso_permitido bool = Falso
+}

@@ -103,3 +103,53 @@ func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *InfixExpression) String() string {
 	return "(" + ie.Left.String() + " " + ie.Operator + " " + ie.Right.String() + ")"
 }
+
+// Bloque de código (agrupación de sentencias entre llaves)
+type BlockStatement struct {
+	Token      lexer.Token // El token '{'
+	Statements []Statement
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var out string
+	for _, s := range bs.Statements {
+		out += s.String()
+	}
+	return out
+}
+
+// Expresión Condicional (si / sino)
+type IfExpression struct {
+	Token       lexer.Token // El token 'si'
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ie *IfExpression) expressionNode()      {}
+func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IfExpression) String() string {
+	var out string
+	out += "si " + ie.Condition.String() + " { " + ie.Consequence.String() + " }"
+	if ie.Alternative != nil {
+		out += " sino { " + ie.Alternative.String() + " }"
+	}
+	return out
+}
+
+// Sentencia de expresión (permite que una expresión viva como sentencia independiente)
+type ExpressionStatement struct {
+	Token      lexer.Token // El primer token de la expresión
+	Expression Expression
+}
+
+func (es *ExpressionStatement) statementNode()       {}
+func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
+func (es *ExpressionStatement) String() string {
+	if es.Expression != nil {
+		return es.Expression.String()
+	}
+	return ""
+}

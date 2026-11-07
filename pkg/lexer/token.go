@@ -40,6 +40,8 @@ const (
 	RPAREN   = ")"
 	LBRACKET = "["
 	RBRACKET = "]"
+	LBRACE   = "{" // <-- Agrega esto
+	RBRACE   = "}" // <-- Agrega esto
 )
 
 // Palabras reservadas según tu diseño de NoVAto

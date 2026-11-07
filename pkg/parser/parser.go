@@ -62,6 +62,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(lexer.RT, p.parseInfixExpression)
 	p.registerInfix("and", p.parseInfixExpression)
 
+	p.registerPrefix("si", p.parseIfExpression)
+
 	p.nextToken()
 	p.nextToken()
 
@@ -86,9 +88,18 @@ func (p *Parser) ParseProgram() *ast.Program {
 	program.Statements = []ast.Statement{}
 
 	for p.curTok.Type != lexer.EOF {
+		// Si es un salto de línea puro, simplemente avanzamos
+		if p.curTok.Literal == "\n" || p.curTok.Type == "NL" { // Ajusta el tipo según tu token de salto de línea si aplica
+			p.nextToken()
+			continue
+		}
+
 		stmt := p.parseStatement()
 		if stmt != nil {
-			program.Statements = append(program.Statements, stmt)
+			// Evitar imprimir sentencias vacías en el string
+			if stmt.String() != "" {
+				program.Statements = append(program.Statements, stmt)
+			}
 		}
 		p.nextToken()
 	}
@@ -101,8 +112,20 @@ func (p *Parser) parseStatement() ast.Statement {
 	case "VARIABLE", "CONSTANTE":
 		return p.parseVariableStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curTok}
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	// Opcional: consumir saltos de línea si tu lexer los emite
+	if p.peekTokenIs("\n") {
+		p.nextToken()
+	}
+
+	return stmt
 }
 
 func (p *Parser) parseVariableStatement() ast.Statement {
@@ -208,4 +231,53 @@ func (p *Parser) curPrecedence() int {
 		return p
 	}
 	return LOWEST
+}
+
+func (p *Parser) parseIfExpression() ast.Expression {
+	expression := &ast.IfExpression{Token: p.curTok}
+
+	// Avanzamos para evaluar la condición del 'si'
+	p.nextToken()
+	expression.Condition = p.parseExpression(LOWEST)
+
+	// Esperamos la apertura del bloque '{'
+	if !p.expectPeek(lexer.LBRACE) {
+		return nil
+	}
+
+	expression.Consequence = p.parseBlockStatement()
+
+	// Verificamos si existe un bloque 'sino'
+	if p.peekTokenIs("SINO") {
+		p.nextToken() // Avanza a 'sino'
+
+		if !p.expectPeek(lexer.LBRACE) {
+			return nil
+		}
+
+		expression.Alternative = p.parseBlockStatement()
+	}
+
+	return expression
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	block := &ast.BlockStatement{Token: p.curTok}
+	block.Statements = []ast.Statement{}
+
+	p.nextToken()
+
+	for !p.curTokIs(lexer.RBRACE) && !p.curTokIs(lexer.EOF) {
+		stmt := p.parseStatement()
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+		p.nextToken()
+	}
+
+	return block
+}
+
+func (p *Parser) curTokIs(t lexer.TokenType) bool {
+	return p.curTok.Type == t
 }
