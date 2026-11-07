@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"novato/pkg/lexer"
+	"novato/pkg/parser"
 	"os"
 )
 
@@ -32,10 +33,12 @@ func main() {
 }
 
 func procesarCodigo(codigo string) {
-	s := lexer.New(codigo)
+	l := lexer.New(codigo)
+	p := parser.New(l)
+	programa := p.ParseProgram()
 
-	// Recorrer y mostrar cada token generado por el lexer
-	for tok := s.NextToken(); tok.Type != lexer.EOF; tok = s.NextToken() {
-		fmt.Printf("Token -> Tipo: %-12s | Literal: %s\n", tok.Type, tok.Literal)
+	fmt.Printf("--- Árbol de Sintaxis Abstracta (AST) ---\n")
+	for _, stmt := range programa.Statements {
+		fmt.Printf("Sentencia detectada: %s\n", stmt.String())
 	}
 }
