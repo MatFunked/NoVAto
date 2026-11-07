@@ -52,7 +52,12 @@ type VariableStatement struct {
 func (vs *VariableStatement) statementNode()       {}
 func (vs *VariableStatement) TokenLiteral() string { return vs.Token.Literal }
 func (vs *VariableStatement) String() string {
-	return vs.Token.Literal + " " + vs.Name.String() + " = ..."
+	var out string
+	out += vs.Token.Literal + " " + vs.Name.String() + " " + vs.Type + " = "
+	if vs.Value != nil {
+		out += vs.Value.String()
+	}
+	return out
 }
 
 // Identificador (nombres de variables, funciones)
@@ -64,3 +69,23 @@ type Identifier struct {
 func (i *Identifier) expressionNode()      {}
 func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
 func (i *Identifier) String() string       { return i.Value }
+
+// Literal entero (ej: 3, 18)
+type IntegerLiteral struct {
+	Token lexer.Token
+	Value int64
+}
+
+func (il *IntegerLiteral) expressionNode()      {}
+func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+// Literal booleano (Verdadero, Falso)
+type Boolean struct {
+	Token lexer.Token
+	Value bool
+}
+
+func (b *Boolean) expressionNode()      {}
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+func (b *Boolean) String() string       { return b.Token.Literal }

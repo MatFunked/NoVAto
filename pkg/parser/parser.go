@@ -1,22 +1,56 @@
 package parser
 
 import (
+	"fmt"
 	"novato/pkg/ast"
 	"novato/pkg/lexer"
+	"strconv"
+)
+
+// Precedencias de operadores
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > o <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X o !X
+	CALL        // myFunction(X)
+)
+
+type (
+	prefixParseFn func() ast.Expression
+	infixParseFn  func(ast.Expression) ast.Expression
 )
 
 type Parser struct {
 	l       *lexer.Lexer
 	curTok  lexer.Token
 	peekTok lexer.Token
+
+	prefixParseFns map[lexer.TokenType]prefixParseFn
+	infixParseFns  map[lexer.TokenType]infixParseFn
 }
 
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{l: l}
+
+	p.prefixParseFns = make(map[lexer.TokenType]prefixParseFn)
+	p.registerPrefix(lexer.IDENT, p.parseIdentifier)
+	p.registerPrefix(lexer.INT, p.parseIntegerLiteral)
+	p.registerPrefix("VERDADERO", p.parseBoolean)
+	p.registerPrefix("FALSO", p.parseBoolean)
+
 	// Leer dos tokens para establecer curTok y peekTok
 	p.nextToken()
 	p.nextToken()
+
 	return p
+}
+
+func (p *Parser) registerPrefix(tokenType lexer.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
 }
 
 func (p *Parser) nextToken() {
@@ -51,7 +85,6 @@ func (p *Parser) parseStatement() ast.Statement {
 func (p *Parser) parseVariableStatement() ast.Statement {
 	stmt := &ast.VariableStatement{Token: p.curTok}
 
-	// Siguiente token debe ser el identificador (nombre de la variable)
 	if !p.expectPeek(lexer.IDENT) {
 		return nil
 	}
@@ -65,18 +98,46 @@ func (p *Parser) parseVariableStatement() ast.Statement {
 
 	stmt.Type = p.curTok.Literal
 
-	// Siguiente token debe ser '='
 	if !p.expectPeek(lexer.ASSIGN) {
 		return nil
 	}
 
-	// TODO: Aquí analizaremos la expresión del valor próximamente.
-	// Por ahora avanzamos hasta el final de la sentencia o línea.
-	for p.curTok.Type != lexer.EOF && p.curTok.Literal != "\n" {
-		p.nextToken()
-	}
+	p.nextToken()
+	stmt.Value = p.parseExpression(LOWEST)
 
 	return stmt
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curTok.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+	return leftExp
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.curTok}
+
+	value, err := strconv.ParseInt(p.curTok.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("no se pudo parsear %q como entero", p.curTok.Literal)
+		// Aquí podríamos registrar errores del parser en el futuro
+		_ = msg
+		return nil
+	}
+
+	lit.Value = value
+	return lit
+}
+
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.curTok, Value: p.curTok.Type == "VERDADERO"}
 }
 
 func (p *Parser) peekTokenIs(t lexer.TokenType) bool {
