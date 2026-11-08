@@ -62,6 +62,11 @@ var keywords = map[string]TokenType{
 	"comparar": "COMPARAR",
 	"encaso":   "ENCASO",
 
+	// bucles
+	"mientras": "MIENTRAS",
+	"para":     "PARA",
+	"hasta":    "HASTA",
+
 	//return
 	"retornar": "RETORNAR",
 	//yield
@@ -73,6 +78,8 @@ var keywords = map[string]TokenType{
 
 	//raise
 	"romper": "ROMPER",
+	//control de flujo
+	"continuar": "CONTINUAR",
 
 	// Tipos de datos
 	"ent":  "T_ENT",
