@@ -62,7 +62,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(lexer.RT, p.parseInfixExpression)
 	p.registerInfix("and", p.parseInfixExpression)
 
-	p.registerPrefix("si", p.parseIfExpression)
+	p.registerPrefix("SI", p.parseIfExpression)
+	p.registerPrefix("OSI", p.parseIfExpression)
+	p.registerPrefix("ENCASO", p.parseIfExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -88,18 +90,14 @@ func (p *Parser) ParseProgram() *ast.Program {
 	program.Statements = []ast.Statement{}
 
 	for p.curTok.Type != lexer.EOF {
-		// Si es un salto de línea puro, simplemente avanzamos
-		if p.curTok.Literal == "\n" || p.curTok.Type == "NL" { // Ajusta el tipo según tu token de salto de línea si aplica
+		if p.curTok.Literal == "\n" || p.curTok.Type == "NL" {
 			p.nextToken()
 			continue
 		}
 
 		stmt := p.parseStatement()
 		if stmt != nil {
-			// Evitar imprimir sentencias vacías en el string
-			if stmt.String() != "" {
-				program.Statements = append(program.Statements, stmt)
-			}
+			program.Statements = append(program.Statements, stmt)
 		}
 		p.nextToken()
 	}
@@ -111,6 +109,10 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.curTok.Type {
 	case "VARIABLE", "CONSTANTE":
 		return p.parseVariableStatement()
+	case "SI":
+		stmt := &ast.ExpressionStatement{Token: p.curTok}
+		stmt.Expression = p.parseExpression(LOWEST)
+		return stmt
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -236,20 +238,32 @@ func (p *Parser) curPrecedence() int {
 func (p *Parser) parseIfExpression() ast.Expression {
 	expression := &ast.IfExpression{Token: p.curTok}
 
-	// Avanzamos para evaluar la condición del 'si'
 	p.nextToken()
 	expression.Condition = p.parseExpression(LOWEST)
 
-	// Esperamos la apertura del bloque '{'
 	if !p.expectPeek(lexer.LBRACE) {
 		return nil
 	}
 
 	expression.Consequence = p.parseBlockStatement()
 
-	// Verificamos si existe un bloque 'sino'
-	if p.peekTokenIs("SINO") {
-		p.nextToken() // Avanza a 'sino'
+	if p.peekTokenIs("OSI") {
+		// 'osi' encadena otro IfExpression dentro del bloque alternativo (elif)
+		p.nextToken()
+		osiToken := p.curTok
+		nested := p.parseIfExpression()
+		if nested == nil {
+			return nil
+		}
+
+		expression.Alternative = &ast.BlockStatement{
+			Token: osiToken,
+			Statements: []ast.Statement{
+				&ast.ExpressionStatement{Token: osiToken, Expression: nested},
+			},
+		}
+	} else if p.peekTokenIs("SINO") {
+		p.nextToken()
 
 		if !p.expectPeek(lexer.LBRACE) {
 			return nil

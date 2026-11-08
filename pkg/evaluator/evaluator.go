@@ -41,6 +41,12 @@ func Eval(node ast.Node, env *Environment) object.Object {
 		val := Eval(node.Value, env)
 		env.Set(node.Name.Value, val)
 		return val
+
+	case *ast.IfExpression:
+		return evalIfExpression(node, env)
+
+	case *ast.BlockStatement:
+		return evalBlockStatement(node, env)
 	}
 
 	return NULL
@@ -109,4 +115,46 @@ func nativeBoolToBooleanObject(input bool) *object.Boolean {
 		return TRUE
 	}
 	return FALSE
+}
+
+func evalIfExpression(ie *ast.IfExpression, env *Environment) object.Object {
+	condition := Eval(ie.Condition, env)
+
+	if isTruthy(condition) {
+		return Eval(ie.Consequence, env)
+	}
+
+	if ie.Alternative != nil {
+		return Eval(ie.Alternative, env)
+	}
+
+	return NULL
+}
+
+func isTruthy(obj object.Object) bool {
+	if obj == nil {
+		return false
+	}
+
+	switch obj {
+	case TRUE:
+		return true
+	case FALSE:
+		return false
+	case NULL:
+		return false
+	default:
+		if boolObj, ok := obj.(*object.Boolean); ok {
+			return boolObj.Value
+		}
+		return true
+	}
+}
+
+func evalBlockStatement(block *ast.BlockStatement, env *Environment) object.Object {
+	var result object.Object
+	for _, statement := range block.Statements {
+		result = Eval(statement, env)
+	}
+	return result
 }

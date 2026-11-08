@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"bytes"
 	"novato/pkg/lexer"
 )
 
@@ -120,23 +121,35 @@ func (bs *BlockStatement) String() string {
 	return out
 }
 
-// Expresión Condicional (si / sino)
+// Expresión Condicional (si / osi / sino)
 type IfExpression struct {
-	Token       lexer.Token // El token 'si'
+	Token       lexer.Token // El token 'si' u 'osi'
 	Condition   Expression
 	Consequence *BlockStatement
-	Alternative *BlockStatement
+	Alternative *BlockStatement // Bloque 'sino' o bloque sintético que contiene un IfExpression 'osi'
 }
 
 func (ie *IfExpression) expressionNode()      {}
 func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IfExpression) String() string {
-	var out string
-	out += "si " + ie.Condition.String() + " { " + ie.Consequence.String() + " }"
+	var out bytes.Buffer
+
+	out.WriteString(ie.Token.Literal)
+	out.WriteString(" ")
+	out.WriteString(ie.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(ie.Consequence.String())
+
 	if ie.Alternative != nil {
-		out += " sino { " + ie.Alternative.String() + " }"
+		if ie.Alternative.Token.Type == "OSI" {
+			out.WriteString(" ")
+		} else {
+			out.WriteString(" sino ")
+		}
+		out.WriteString(ie.Alternative.String())
 	}
-	return out
+
+	return out.String()
 }
 
 // Sentencia de expresión (permite que una expresión viva como sentencia independiente)

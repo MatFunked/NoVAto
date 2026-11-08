@@ -47,16 +47,33 @@ const (
 // Palabras reservadas según tu diseño de NoVAto
 var keywords = map[string]TokenType{
 	"variable":  "VARIABLE",
+	"var":       "VARIABLE",
 	"constante": "CONSTANTE",
 	"func":      "FUNC",
+	"funcion":   "FUNC",
 	"clase":     "CLASE",
-	"si":        "SI",
-	"encaso":    "ENCASO",
-	"sino":      "SINO",
-	"retornar":  "RETORNAR",
-	"importar":  "IMPORTAR",
-	"de":        "DE",
-	"romper":    "ROMPER",
+
+	//if, elif y else
+	"si":   "SI",
+	"osi":  "OSI",
+	"sino": "SINO",
+
+	//match, case
+	"comparar": "COMPARAR",
+	"encaso":   "ENCASO",
+
+	//return
+	"retornar": "RETORNAR",
+	//yield
+	"ceder": "CEDER",
+
+	//from, import
+	"importar": "IMPORTAR",
+	"de":       "DE",
+
+	//raise
+	"romper": "ROMPER",
+
 	// Tipos de datos
 	"ent":  "T_ENT",
 	"text": "T_TEXT",
