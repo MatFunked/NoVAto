@@ -244,6 +244,55 @@ func (fe *ForExpression) String() string {
 	return out.String()
 }
 
+// Caso de una selección múltiple (encaso valor1, valor2 { ... })
+type CaseClause struct {
+	Token  lexer.Token // El token 'encaso'
+	Values []Expression
+	Body   *BlockStatement
+}
+
+// Expresión de selección múltiple (comparar / encaso / sino)
+type SwitchExpression struct {
+	Token   lexer.Token // El token 'comparar'
+	Value   Expression
+	Cases   []*CaseClause
+	Default *BlockStatement // Bloque 'sino' o 'defecto' opcional
+}
+
+func (se *SwitchExpression) expressionNode()      {}
+func (se *SwitchExpression) TokenLiteral() string { return se.Token.Literal }
+func (se *SwitchExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(se.Token.Literal)
+	out.WriteString(" (")
+	out.WriteString(se.Value.String())
+	out.WriteString(") {")
+
+	for _, c := range se.Cases {
+		out.WriteString(" ")
+		out.WriteString(c.Token.Literal)
+		out.WriteString(" ")
+
+		values := make([]string, 0, len(c.Values))
+		for _, v := range c.Values {
+			values = append(values, v.String())
+		}
+		out.WriteString(strings.Join(values, ", "))
+		out.WriteString(" ")
+		out.WriteString(c.Body.String())
+	}
+
+	if se.Default != nil {
+		out.WriteString(" sino ")
+		out.WriteString(se.Default.String())
+	}
+
+	out.WriteString("}")
+
+	return out.String()
+}
+
 // Sentencia romper (break): sale inmediatamente del bucle actual
 type BreakStatement struct {
 	Token lexer.Token // El token 'romper'

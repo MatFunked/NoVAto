@@ -62,6 +62,7 @@ var keywords = map[string]TokenType{
 	//match, case
 	"comparar": "COMPARAR",
 	"encaso":   "ENCASO",
+	"defecto":  "DEFECTO",
 
 	// bucles
 	"mientras": "MIENTRAS",

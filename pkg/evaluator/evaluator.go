@@ -127,6 +127,9 @@ func Eval(node ast.Node, env *Environment) object.Object {
 	case *ast.ForExpression:
 		return evalForExpression(node, env)
 
+	case *ast.SwitchExpression:
+		return evalSwitchExpression(node, env)
+
 	case *ast.BlockStatement:
 		return evalBlockStatement(node, env)
 	}
@@ -175,6 +178,21 @@ func evalInfixExpression(operator string, left, right object.Object) object.Obje
 	case left.Type() == object.DECIMAL_OBJ && right.Type() == object.INTEGER_OBJ:
 		rightVal := float64(right.(*object.Integer).Value)
 		return evalDecimalInfixExpression(operator, left.(*object.Decimal).Value, rightVal)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalEqualityOnly(operator, left.(*object.String).Value == right.(*object.String).Value)
+	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
+		return evalEqualityOnly(operator, left.(*object.Boolean).Value == right.(*object.Boolean).Value)
+	default:
+		return NULL
+	}
+}
+
+func evalEqualityOnly(operator string, equal bool) object.Object {
+	switch operator {
+	case "==":
+		return nativeBoolToBooleanObject(equal)
+	case "!=":
+		return nativeBoolToBooleanObject(!equal)
 	default:
 		return NULL
 	}
@@ -256,6 +274,37 @@ func evalIfExpression(ie *ast.IfExpression, env *Environment) object.Object {
 
 	if ie.Alternative != nil {
 		return Eval(ie.Alternative, env)
+	}
+
+	return NULL
+}
+
+func evalSwitchExpression(se *ast.SwitchExpression, env *Environment) object.Object {
+	value := Eval(se.Value, env)
+	if isError(value) {
+		return value
+	}
+
+	for _, clause := range se.Cases {
+		for _, caseExpr := range clause.Values {
+			expected := Eval(caseExpr, env)
+			if isError(expected) {
+				return expected
+			}
+
+			equal := evalInfixExpression("==", value, expected)
+			if isError(equal) {
+				return equal
+			}
+
+			if equal == TRUE {
+				return Eval(clause.Body, env)
+			}
+		}
+	}
+
+	if se.Default != nil {
+		return Eval(se.Default, env)
 	}
 
 	return NULL

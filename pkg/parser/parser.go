@@ -79,7 +79,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerPrefix("SI", p.parseIfExpression)
 	p.registerPrefix("OSI", p.parseIfExpression)
-	p.registerPrefix("ENCASO", p.parseIfExpression)
+	p.registerPrefix("COMPARAR", p.parseCompararExpression)
 	p.registerPrefix("MIENTRAS", p.parseWhileExpression)
 	p.registerPrefix("PARA", p.parseForExpression)
 
@@ -342,6 +342,86 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	}
 
 	return expression
+}
+
+func (p *Parser) parseCompararExpression() ast.Expression {
+	expression := &ast.SwitchExpression{Token: p.curTok}
+
+	if !p.expectPeek(lexer.LPAREN) {
+		return nil
+	}
+
+	p.nextToken()
+	expression.Value = p.parseExpression(LOWEST)
+	if expression.Value == nil {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.RPAREN) {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.LBRACE) {
+		return nil
+	}
+
+	p.nextToken()
+
+	for !p.curTokIs(lexer.RBRACE) && !p.curTokIs(lexer.EOF) {
+		switch p.curTok.Type {
+		case "ENCASO":
+			clause := p.parseCaseClause()
+			if clause == nil {
+				return nil
+			}
+			expression.Cases = append(expression.Cases, clause)
+
+		case "SINO", "DEFECTO":
+			if expression.Default != nil {
+				return nil
+			}
+			if !p.expectPeek(lexer.LBRACE) {
+				return nil
+			}
+			expression.Default = p.parseBlockStatement()
+
+		default:
+			return nil
+		}
+
+		p.nextToken()
+	}
+
+	return expression
+}
+
+func (p *Parser) parseCaseClause() *ast.CaseClause {
+	clause := &ast.CaseClause{Token: p.curTok}
+
+	p.nextToken()
+	value := p.parseExpression(LOWEST)
+	if value == nil {
+		return nil
+	}
+	clause.Values = append(clause.Values, value)
+
+	for p.peekTokenIs(lexer.COMMA) {
+		p.nextToken() // consume la coma
+		p.nextToken() // avanza al siguiente valor
+		value = p.parseExpression(LOWEST)
+		if value == nil {
+			return nil
+		}
+		clause.Values = append(clause.Values, value)
+	}
+
+	if !p.expectPeek(lexer.LBRACE) {
+		return nil
+	}
+
+	clause.Body = p.parseBlockStatement()
+
+	return clause
 }
 
 func (p *Parser) parseWhileExpression() ast.Expression {
