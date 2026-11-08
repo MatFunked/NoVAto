@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"novato/pkg/evaluator"
 	"novato/pkg/lexer"
 	"novato/pkg/parser"
 	"os"
@@ -36,6 +37,12 @@ func procesarCodigo(codigo string) {
 	l := lexer.New(codigo)
 	p := parser.New(l)
 	programa := p.ParseProgram()
+
+	// Evaluamos el AST
+	resultado := evaluator.Eval(programa)
+	if resultado != nil {
+		fmt.Printf("Resultado de ejecución: %s\n", resultado.Inspect())
+	}
 
 	fmt.Printf("--- Árbol de Sintaxis Abstracta (AST) ---\n")
 	for _, stmt := range programa.Statements {
