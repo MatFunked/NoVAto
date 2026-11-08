@@ -86,6 +86,26 @@ func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 
+// Literal decimal (ej: 3.14, 0.5)
+type FloatLiteral struct {
+	Token lexer.Token
+	Value float64
+}
+
+func (fl *FloatLiteral) expressionNode()      {}
+func (fl *FloatLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *FloatLiteral) String() string       { return fl.Token.Literal }
+
+// Literal de texto (ej: "Acceso concedido")
+type StringLiteral struct {
+	Token lexer.Token
+	Value string
+}
+
+func (sl *StringLiteral) expressionNode()      {}
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+func (sl *StringLiteral) String() string       { return "\"" + sl.Value + "\"" }
+
 // Literal booleano (Verdadero, Falso)
 type Boolean struct {
 	Token lexer.Token

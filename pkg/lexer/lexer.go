@@ -1,5 +1,7 @@
 package lexer
 
+import "strings"
+
 type Lexer struct {
 	input        string
 	position     int  // posición actual en el texto (carácter actual)
@@ -59,6 +61,18 @@ func (l *Lexer) NextToken() Token {
 		return l.NextToken()
 	case '+':
 		tok = newToken(PLUS, l.ch)
+	case '*':
+		tok = newToken(ASTERISK, l.ch)
+	case '/':
+		tok = newToken(SLASH, l.ch)
+	case '!':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = Token{Type: NOT_EQ, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = newToken(BANG, l.ch)
+		}
 	case '-':
 		if l.peekChar() == '>' {
 			ch := l.ch
@@ -99,8 +113,12 @@ func (l *Lexer) NextToken() Token {
 			tok.Type = LookupIdent(tok.Literal)
 			return tok
 		} else if isDigit(l.ch) {
-			tok.Type = INT
 			tok.Literal = l.readNumber()
+			if strings.Contains(tok.Literal, ".") {
+				tok.Type = FLOAT
+			} else {
+				tok.Type = INT
+			}
 			return tok
 		} else {
 			tok = newToken(ILLEGAL, l.ch)
@@ -138,6 +156,14 @@ func (l *Lexer) readNumber() string {
 	for isDigit(l.ch) {
 		l.readChar()
 	}
+
+	if l.ch == '.' && isDigit(l.peekChar()) {
+		l.readChar()
+		for isDigit(l.ch) {
+			l.readChar()
+		}
+	}
+
 	return l.input[position:l.position]
 }
 

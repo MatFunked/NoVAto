@@ -15,6 +15,7 @@ const (
 	// Identificadores y Literales
 	IDENT  = "IDENT"  // variables, funciones (ej: verificar_acceso, usuario)
 	INT    = "INT"    // números enteros (ej: 3, 18)
+	FLOAT  = "FLOAT"  // números decimales (ej: 3.14, 0.5)
 	STRING = "STRING" // cadenas de texto (ej: "Acceso concedido")
 
 	// Operadores y símbolos

@@ -20,16 +20,19 @@ const (
 )
 
 var precedences = map[lexer.TokenType]int{
-	lexer.ASSIGN: ASSIGNMENT,
-	lexer.EQ:     EQUALS,
-	lexer.LTE:    LESSGREATER,
-	lexer.GTE:    LESSGREATER,
-	lexer.LT:     LESSGREATER,
-	lexer.RT:     LESSGREATER,
-	lexer.PLUS:   SUM,
-	lexer.MINUS:  SUM,
-	lexer.LPAREN: CALL,
-	"and":        EQUALS, // Precedencia para operador lógico
+	lexer.ASSIGN:   ASSIGNMENT,
+	lexer.EQ:       EQUALS,
+	lexer.NOT_EQ:   EQUALS,
+	lexer.LTE:      LESSGREATER,
+	lexer.GTE:      LESSGREATER,
+	lexer.LT:       LESSGREATER,
+	lexer.RT:       LESSGREATER,
+	lexer.PLUS:     SUM,
+	lexer.MINUS:    SUM,
+	lexer.ASTERISK: PRODUCT,
+	lexer.SLASH:    PRODUCT,
+	lexer.LPAREN:   CALL,
+	"and":          EQUALS, // Precedencia para operador lógico
 }
 
 type (
@@ -52,6 +55,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = make(map[lexer.TokenType]prefixParseFn)
 	p.registerPrefix(lexer.IDENT, p.parseIdentifier)
 	p.registerPrefix(lexer.INT, p.parseIntegerLiteral)
+	p.registerPrefix(lexer.FLOAT, p.parseFloatLiteral)
+	p.registerPrefix(lexer.STRING, p.parseStringLiteral)
 	p.registerPrefix(lexer.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix("VERDADERO", p.parseBoolean)
 	p.registerPrefix("FALSO", p.parseBoolean)
@@ -62,7 +67,10 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(lexer.LPAREN, p.parseCallExpression)
 	p.registerInfix(lexer.PLUS, p.parseInfixExpression)
 	p.registerInfix(lexer.MINUS, p.parseInfixExpression)
+	p.registerInfix(lexer.ASTERISK, p.parseInfixExpression)
+	p.registerInfix(lexer.SLASH, p.parseInfixExpression)
 	p.registerInfix(lexer.EQ, p.parseInfixExpression)
+	p.registerInfix(lexer.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(lexer.LTE, p.parseInfixExpression)
 	p.registerInfix(lexer.GTE, p.parseInfixExpression)
 	p.registerInfix(lexer.LT, p.parseInfixExpression)
@@ -248,6 +256,22 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 	lit.Value = value
 	return lit
+}
+
+func (p *Parser) parseFloatLiteral() ast.Expression {
+	lit := &ast.FloatLiteral{Token: p.curTok}
+
+	value, err := strconv.ParseFloat(p.curTok.Literal, 64)
+	if err != nil {
+		return nil
+	}
+
+	lit.Value = value
+	return lit
+}
+
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.curTok, Value: p.curTok.Literal}
 }
 
 func (p *Parser) parseBoolean() ast.Expression {

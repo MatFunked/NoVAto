@@ -38,7 +38,7 @@ func procesarCodigo(codigo string) {
 	p := parser.New(l)
 	programa := p.ParseProgram()
 
-	env := evaluator.NewEnvironment()
+	env := evaluator.NewGlobalEnvironment()
 	resultado := evaluator.Eval(programa, env)
 	if resultado != nil {
 		fmt.Printf("Resultado de ejecución: %s\n", resultado.Inspect())
