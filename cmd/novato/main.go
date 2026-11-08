@@ -38,8 +38,8 @@ func procesarCodigo(codigo string) {
 	p := parser.New(l)
 	programa := p.ParseProgram()
 
-	// Evaluamos el AST
-	resultado := evaluator.Eval(programa)
+	env := evaluator.NewEnvironment()
+	resultado := evaluator.Eval(programa, env)
 	if resultado != nil {
 		fmt.Printf("Resultado de ejecución: %s\n", resultado.Inspect())
 	}
